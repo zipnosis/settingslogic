@@ -29,6 +29,14 @@ class Settingslogic < Hash
       @namespace ||= value
     end
 
+    def default_namespace(value = nil)
+      if value.nil?
+        @default_namespace || 'defaults'
+      else
+        @default_namespace = value
+      end
+    end
+
     def suppress_errors(value = nil)
       @suppress_errors ||= value
     end
@@ -101,10 +109,11 @@ class Settingslogic < Hash
     else
       file_contents = open(hash_or_file).read
       hash = file_contents.empty? ? {} : YAML.load(ERB.new(file_contents).result).to_hash
+      default_hash = hash[self.class.default_namespace] || {}    
       if self.class.namespace
         hash = hash[self.class.namespace] or return missing_key("Missing setting '#{self.class.namespace}' in #{hash_or_file}")
       end
-      self.replace hash
+      self.replace default_hash.deep_merge(hash)
     end
     @section = section || self.class.source  # so end of error says "in application.yml"
     create_accessors!
